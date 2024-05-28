@@ -34,8 +34,8 @@ energy_hourly.reset_index(inplace=True)
 # Merge datasets on 'Date'
 merged_data = pd.merge(energy_hourly, weather_data, on='Date')
 
-# Filter non-zero solar production
-merged_data = merged_data[merged_data['Solar_MW'] > 0]
+# # Filter non-zero solar production
+# merged_data = merged_data[merged_data['Solar_MW'] > 0]
 
 # Correlation of weather conditions and energy production
 correlation = merged_data[[
