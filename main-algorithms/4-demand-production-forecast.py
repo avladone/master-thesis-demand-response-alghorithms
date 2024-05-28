@@ -1,5 +1,5 @@
 """
-This script forecasts energy demand and production using weather data.
+This script predicts energy demand and production using weather data.
 """
 
 # Step 1: Import Libraries and Load Datasets
@@ -28,6 +28,8 @@ y_hydrocarbons = merged_data['Hydrocarbons_MW']
 y_water = merged_data['Water_MW']
 y_nuclear = merged_data['Nuclear_MW']
 y_biomass = merged_data['Biomass_MW']
+y_import = merged_data['Import_Positive_MW']
+y_export = merged_data['Export_Positive_MW']
 
 # Demand forecasting model
 X_train, X_test, y_train, y_test = train_test_split(X, y_demand, test_size=0.2, random_state=42)
@@ -43,6 +45,8 @@ hydrocarbons_model = RandomForestRegressor(random_state=42)
 water_model = RandomForestRegressor(random_state=42)
 nuclear_model = RandomForestRegressor(random_state=42)
 biomass_model = RandomForestRegressor(random_state=42)
+import_model = RandomForestRegressor(random_state=42)
+export_model = RandomForestRegressor(random_state=42)
 
 # Align indices after filtering out zero solar production
 X = X.reset_index(drop=True)
@@ -53,6 +57,8 @@ y_hydrocarbons = y_hydrocarbons.reset_index(drop=True)
 y_water = y_water.reset_index(drop=True)
 y_nuclear = y_nuclear.reset_index(drop=True)
 y_biomass = y_biomass.reset_index(drop=True)
+y_import = y_import.reset_index(drop=True)
+y_export = y_export.reset_index(drop=True)
 
 # Training and prediction for all energy productions
 X_train_solar, X_test_solar, y_train_solar, y_test_solar = train_test_split(X, y_solar, test_size=0.2, random_state=42)
@@ -62,6 +68,8 @@ X_train_hydrocarbons, X_test_hydrocarbons, y_train_hydrocarbons, y_test_hydrocar
 X_train_water, X_test_water, y_train_water, y_test_water = train_test_split(X, y_water, test_size=0.2, random_state=42)
 X_train_nuclear, X_test_nuclear, y_train_nuclear, y_test_nuclear = train_test_split(X, y_nuclear, test_size=0.2, random_state=42)
 X_train_biomass, X_test_biomass, y_train_biomass, y_test_biomass = train_test_split(X, y_biomass, test_size=0.2, random_state=42)
+X_train_import, X_test_import, y_train_import, y_test_import = train_test_split(X, y_import, test_size=0.2, random_state=42)
+X_train_export, X_test_export, y_train_export, y_test_export = train_test_split(X, y_export, test_size=0.2, random_state=42)
 
 solar_model.fit(X_train_solar, y_train_solar)
 wind_model.fit(X_train_wind, y_train_wind)
@@ -70,6 +78,8 @@ hydrocarbons_model.fit(X_train_hydrocarbons, y_train_hydrocarbons)
 water_model.fit(X_train_water, y_train_water)
 nuclear_model.fit(X_train_nuclear, y_train_nuclear)
 biomass_model.fit(X_train_biomass, y_train_biomass)
+import_model.fit(X_train_import, y_train_import)
+export_model.fit(X_train_export, y_train_export)
 
 y_pred_solar = solar_model.predict(X_test_solar)
 y_pred_wind = wind_model.predict(X_test_wind)
@@ -78,6 +88,8 @@ y_pred_hydrocarbons = hydrocarbons_model.predict(X_test_hydrocarbons)
 y_pred_water = water_model.predict(X_test_water)
 y_pred_nuclear = nuclear_model.predict(X_test_nuclear)
 y_pred_biomass = biomass_model.predict(X_test_biomass)
+y_pred_import = import_model.predict(X_test_import)
+y_pred_export = export_model.predict(X_test_export)
 
 # Correct solar predictions where actuals are zero
 actual_zeros = merged_data[merged_data['Solar_MW'] == 0].index
@@ -103,6 +115,8 @@ hydrocarbons_rmse = rmse_percentage(y_test_hydrocarbons, y_pred_hydrocarbons)
 water_rmse = rmse_percentage(y_test_water, y_pred_water)
 nuclear_rmse = rmse_percentage(y_test_nuclear, y_pred_nuclear)
 biomass_rmse = rmse_percentage(y_test_biomass, y_pred_biomass)
+import_rmse = rmse_percentage(y_test_import, y_pred_import)
+export_rmse = rmse_percentage(y_test_export, y_pred_export)
 
 # Output RMSE percentages
 print(f"Demand Forecast RMSE (%): {demand_rmse}")
@@ -113,6 +127,8 @@ print(f"Hydrocarbons Production Forecast RMSE (%): {hydrocarbons_rmse}")
 print(f"Water Production Forecast RMSE (%): {water_rmse}")
 print(f"Nuclear Production Forecast RMSE (%): {nuclear_rmse}")
 print(f"Biomass Production Forecast RMSE (%): {biomass_rmse}")
+print(f"Import Forecast RMSE (%): {import_rmse}")
+print(f"Export Forecast RMSE (%): {export_rmse}")
 
 # Calculate relative errors for forecasts
 demand_relative_error = relative_error(y_test, y_pred_demand)
@@ -123,179 +139,113 @@ hydrocarbons_relative_error = relative_error(y_test_hydrocarbons, y_pred_hydroca
 water_relative_error = relative_error(y_test_water, y_pred_water)
 nuclear_relative_error = relative_error(y_test_nuclear, y_pred_nuclear)
 biomass_relative_error = relative_error(y_test_biomass, y_pred_biomass)
+import_relative_error = relative_error(y_test_import, y_pred_import)
+export_relative_error = relative_error(y_test_export, y_pred_export)
 
-# Step 5: Visualization of Forecasts vs. Actuals
+# Create dataframes for actual and predicted values
+df_demand = pd.DataFrame({'Actual': y_test, 'Predicted': y_pred_demand})
+df_solar = pd.DataFrame({'Actual': y_test_solar, 'Predicted': y_pred_solar_corrected})
+df_wind = pd.DataFrame({'Actual': y_test_wind, 'Predicted': y_pred_wind})
+df_coal = pd.DataFrame({'Actual': y_test_coal, 'Predicted': y_pred_coal})
+df_hydrocarbons = pd.DataFrame({'Actual': y_test_hydrocarbons, 'Predicted': y_pred_hydrocarbons})
+df_water = pd.DataFrame({'Actual': y_test_water, 'Predicted': y_pred_water})
+df_nuclear = pd.DataFrame({'Actual': y_test_nuclear, 'Predicted': y_pred_nuclear})
+df_biomass = pd.DataFrame({'Actual': y_test_biomass, 'Predicted': y_pred_biomass})
+df_import = pd.DataFrame({'Actual': y_test_import, 'Predicted': y_pred_import})
+df_export = pd.DataFrame({'Actual': y_test_export, 'Predicted': y_pred_export})
 
-# Energy Demand Visualization
-plt.figure(figsize=(10, 7))
-sns.scatterplot(x=y_test, y=y_pred_demand, color='blue', label='Predicted')
-plt.title('Energy Demand: Actual vs. Predicted', fontsize=16)
-plt.xlabel('Actual Demand (MW)', fontsize=14)
-plt.ylabel('Predicted Demand (MW)', fontsize=14)
-plt.legend(fontsize=12)
-plt.show()
+# Create line graphs for actual vs. predicted values
+def plot_actual_vs_predicted(df, title):
+    plt.figure(figsize=(10, 7))
+    plt.plot(df['Actual'].values, label='Actual')
+    plt.plot(df['Predicted'].values, label='Predicted')
+    plt.title(title, fontsize=16)
+    plt.xlabel('Time', fontsize=14) 
+    plt.ylabel('Values', fontsize=14)
+    plt.legend(fontsize=12)
+    plt.show()
 
-plt.figure(figsize=(10, 7))
-plt.plot(y_test.values, label='Actual Demand')
-plt.plot(y_pred_demand, label='Predicted Demand')
-plt.title('Energy Demand: Actual vs. Predicted', fontsize=16)
-plt.xlabel('Time', fontsize=14)
-plt.ylabel('Demand (MW)', fontsize=14)
-plt.legend(fontsize=12)
-plt.show()
+plot_actual_vs_predicted(df_demand, 'Energy Demand: Actual vs. Predicted')
+plot_actual_vs_predicted(df_solar, 'Solar Energy Production: Actual vs. Predicted')
+plot_actual_vs_predicted(df_wind, 'Wind Energy Production: Actual vs. Predicted')
+plot_actual_vs_predicted(df_coal, 'Coal Energy Production: Actual vs. Predicted')
+plot_actual_vs_predicted(df_hydrocarbons, 'Hydrocarbons Energy Production: Actual vs. Predicted')
+plot_actual_vs_predicted(df_water, 'Water Energy Production: Actual vs. Predicted')
+plot_actual_vs_predicted(df_nuclear, 'Nuclear Energy Production: Actual vs. Predicted')
+plot_actual_vs_predicted(df_biomass, 'Biomass Energy Production: Actual vs. Predicted')
+plot_actual_vs_predicted(df_import, 'Import: Actual vs. Predicted')
+plot_actual_vs_predicted(df_export, 'Export: Actual vs. Predicted')
 
-# Solar Energy Production Visualization
-plt.figure(figsize=(10, 7))
-sns.scatterplot(x=y_test_solar, y=y_pred_solar_corrected, color='green', label='Predicted')
-plt.title('Solar Energy Production: Actual vs. Predicted', fontsize=16)
-plt.xlabel('Actual Solar Production (MW)', fontsize=14)
-plt.ylabel('Predicted Solar Production (MW)', fontsize=14)
-plt.legend(fontsize=12)
-plt.show()
+# Scatter Plots for Actual vs. Predicted Values
 
-plt.figure(figsize=(10, 7))
-plt.plot(y_test_solar.values, label='Actual Solar Production')
-plt.plot(y_pred_solar_corrected, label='Predicted Solar Production')
-plt.title('Solar Energy Production: Actual vs. Predicted', fontsize=16)
-plt.xlabel('Time', fontsize=14)
-plt.ylabel('Solar Production (MW)', fontsize=14)
-plt.legend(fontsize=12)
-plt.show()
+def plot_scatter(df, title, x_label, y_label, color):
+    plt.figure(figsize=(10, 7))
+    sns.scatterplot(x=df['Actual'], y=df['Predicted'], color=color, label='Predicted')
+    plt.title(title, fontsize=16)
+    plt.xlabel(x_label, fontsize=14)
+    plt.ylabel(y_label, fontsize=14)
+    plt.legend(fontsize=12)
+    plt.show()
 
-# Wind Energy Production Visualization
-plt.figure(figsize=(10, 7))
-sns.scatterplot(x=y_test_wind, y=y_pred_wind, color='purple', label='Predicted')
-plt.title('Wind Energy Production: Actual vs. Predicted', fontsize=16)
-plt.xlabel('Actual Wind Production (MW)', fontsize=14)
-plt.ylabel('Predicted Wind Production (MW)', fontsize=14)
-plt.legend(fontsize=12)
-plt.show()
+plot_scatter(df_demand, 'Energy Demand: Actual vs. Predicted', 'Actual Demand (MW)', 'Predicted Demand (MW)', 'blue')
+plot_scatter(df_solar, 'Solar Energy Production: Actual vs. Predicted', 'Actual Solar Production (MW)', 'Predicted Solar Production (MW)', 'green')
+plot_scatter(df_wind, 'Wind Energy Production: Actual vs. Predicted', 'Actual Wind Production (MW)', 'Predicted Wind Production (MW)', 'purple')
+plot_scatter(df_coal, 'Coal Energy Production: Actual vs. Predicted', 'Actual Coal Production (MW)', 'Predicted Coal Production (MW)', 'brown')
+plot_scatter(df_hydrocarbons, 'Hydrocarbons Energy Production: Actual vs. Predicted', 'Actual Hydrocarbons Production (MW)', 'Predicted Hydrocarbons Production (MW)', 'orange')
+plot_scatter(df_water, 'Water Energy Production: Actual vs. Predicted', 'Actual Water Production (MW)', 'Predicted Water Production (MW)', 'blue')
+plot_scatter(df_nuclear, 'Nuclear Energy Production: Actual vs. Predicted', 'Actual Nuclear Production (MW)', 'Predicted Nuclear Production (MW)', 'red')
+plot_scatter(df_biomass, 'Biomass Energy Production: Actual vs. Predicted', 'Actual Biomass Production (MW)', 'Predicted Biomass Production (MW)', 'green')
+plot_scatter(df_import, 'Import: Actual vs. Predicted', 'Actual Import (MW)', 'Predicted Import (MW)', 'cyan')
+plot_scatter(df_export, 'Export: Actual vs. Predicted', 'Actual Export (MW)', 'Predicted Export (MW)', 'magenta')
 
-plt.figure(figsize=(10, 7))
-plt.plot(y_test_wind.values, label='Actual Wind Production')
-plt.plot(y_pred_wind, label='Predicted Wind Production')
-plt.title('Wind Energy Production: Actual vs. Predicted', fontsize=16)
-plt.xlabel('Time', fontsize=14)
-plt.ylabel('Wind Production (MW)', fontsize=14)
-plt.legend(fontsize=12)
-plt.show()
+# Create dataframes for relative errors
+df_relative_error_demand = pd.DataFrame({'Relative_Error': demand_relative_error})
+df_relative_error_solar = pd.DataFrame({'Relative_Error': solar_relative_error})
+df_relative_error_wind = pd.DataFrame({'Relative_Error': wind_relative_error})
+df_relative_error_coal = pd.DataFrame({'Relative_Error': coal_relative_error})
+df_relative_error_hydrocarbons = pd.DataFrame({'Relative_Error': hydrocarbons_relative_error})
+df_relative_error_water = pd.DataFrame({'Relative_Error': water_relative_error})
+df_relative_error_nuclear = pd.DataFrame({'Relative_Error': nuclear_relative_error})
+df_relative_error_biomass = pd.DataFrame({'Relative_Error': biomass_relative_error})
+df_relative_error_import = pd.DataFrame({'Relative_Error': import_relative_error})
+df_relative_error_export = pd.DataFrame({'Relative_Error': export_relative_error})
 
-# Coal Energy Production Visualization
-plt.figure(figsize=(10, 7))
-sns.scatterplot(x=y_test_coal, y=y_pred_coal, color='brown', label='Predicted')
-plt.title('Coal Energy Production: Actual vs. Predicted', fontsize=16)
-plt.xlabel('Actual Coal Production (MW)', fontsize=14)
-plt.ylabel('Predicted Coal Production (MW)', fontsize=14)
-plt.legend(fontsize=12)
-plt.show()
+# Create line graphs for relative errors
+def plot_relative_error(df, title):
+    plt.figure(figsize=(10, 7))
+    plt.plot(df['Relative_Error'].values)
+    plt.title(title, fontsize=16)
+    plt.xlabel('Time', fontsize=14)
+    plt.ylabel('Relative Error (%)', fontsize=14)
+    plt.show()
 
-plt.figure(figsize=(10, 7))
-plt.plot(y_test_coal.values, label='Actual Coal Production')
-plt.plot(y_pred_coal, label='Predicted Coal Production')
-plt.title('Coal Energy Production: Actual vs. Predicted', fontsize=16)
-plt.xlabel('Time', fontsize=14)
-plt.ylabel('Coal Production (MW)', fontsize=14)
-plt.legend(fontsize=12)
-plt.show()
+plot_relative_error(df_relative_error_demand, 'Relative Error: Energy Demand')
+plot_relative_error(df_relative_error_solar, 'Relative Error: Solar Energy Production')
+plot_relative_error(df_relative_error_wind, 'Relative Error: Wind Energy Production')
+plot_relative_error(df_relative_error_coal, 'Relative Error: Coal Energy Production')
+plot_relative_error(df_relative_error_hydrocarbons, 'Relative Error: Hydrocarbons Energy Production')
+plot_relative_error(df_relative_error_water, 'Relative Error: Water Energy Production')
+plot_relative_error(df_relative_error_nuclear, 'Relative Error: Nuclear Energy Production')
+plot_relative_error(df_relative_error_biomass, 'Relative Error: Biomass Energy Production')
+plot_relative_error(df_relative_error_import, 'Relative Error: Import')
+plot_relative_error(df_relative_error_export, 'Relative Error: Export')
 
-# Hydrocarbons Energy Production Visualization
-plt.figure(figsize=(10, 7))
-sns.scatterplot(x=y_test_hydrocarbons, y=y_pred_hydrocarbons, color='orange', label='Predicted')
-plt.title('Hydrocarbons Energy Production: Actual vs. Predicted', fontsize=16)
-plt.xlabel('Actual Hydrocarbons Production (MW)', fontsize=14)
-plt.ylabel('Predicted Hydrocarbons Production (MW)', fontsize=14)
-plt.legend(fontsize=12)
-plt.show()
+# Create dataframes for actual and predicted values
+df_predictions = pd.DataFrame({
+    'Date': merged_data.index[X_test.index],
+    'Predicted_Demand_MW': y_pred_demand,
+    'Predicted_Solar_MW': y_pred_solar_corrected,
+    'Predicted_Wind_MW': y_pred_wind,
+    'Predicted_Coal_MW': y_pred_coal,
+    'Predicted_Hydrocarbons_MW': y_pred_hydrocarbons,
+    'Predicted_Water_MW': y_pred_water,
+    'Predicted_Nuclear_MW': y_pred_nuclear,
+    'Predicted_Biomass_MW': y_pred_biomass,
+    'Predicted_Import_MW': y_pred_import,
+    'Predicted_Export_MW': y_pred_export
+})
 
-plt.figure(figsize=(10, 7))
-plt.plot(y_test_hydrocarbons.values, label='Actual Hydrocarbons Production')
-plt.plot(y_pred_hydrocarbons, label='Predicted Hydrocarbons Production')
-plt.title('Hydrocarbons Energy Production: Actual vs. Predicted', fontsize=16)
-plt.xlabel('Time', fontsize=14)
-plt.ylabel('Hydrocarbons Production (MW)', fontsize=14)
-plt.legend(fontsize=12)
-plt.show()
+# Save predictions to CSV
+df_predictions.to_csv('energy_predictions.csv', index=False)
 
-# Water Energy Production Visualization
-plt.figure(figsize=(10, 7))
-sns.scatterplot(x=y_test_water, y=y_pred_water, color='blue', label='Predicted')
-plt.title('Water Energy Production: Actual vs. Predicted', fontsize=16)
-plt.xlabel('Actual Water Production (MW)', fontsize=14)
-plt.ylabel('Predicted Water Production (MW)', fontsize=14)
-plt.legend(fontsize=12)
-plt.show()
-
-plt.figure(figsize=(10, 7))
-plt.plot(y_test_water.values, label='Actual Water Production')
-plt.plot(y_pred_water, label='Predicted Water Production')
-plt.title('Water Energy Production: Actual vs. Predicted', fontsize=16)
-plt.xlabel('Time', fontsize=14)
-plt.ylabel('Water Production (MW)', fontsize=14)
-plt.legend(fontsize=12)
-plt.show()
-
-# Nuclear Energy Production Visualization
-plt.figure(figsize=(10, 7))
-sns.scatterplot(x=y_test_nuclear, y=y_pred_nuclear, color='red', label='Predicted')
-plt.title('Nuclear Energy Production: Actual vs. Predicted', fontsize=16)
-plt.xlabel('Actual Nuclear Production (MW)', fontsize=14)
-plt.ylabel('Predicted Nuclear Production (MW)', fontsize=14)
-plt.legend(fontsize=12)
-plt.show()
-
-plt.figure(figsize=(10, 7))
-plt.plot(y_test_nuclear.values, label='Actual Nuclear Production')
-plt.plot(y_pred_nuclear, label='Predicted Nuclear Production')
-plt.title('Nuclear Energy Production: Actual vs. Predicted', fontsize=16)
-plt.xlabel('Time', fontsize=14)
-plt.ylabel('Nuclear Production (MW)', fontsize=14)
-plt.legend(fontsize=12)
-plt.show()
-
-# Biomass Energy Production Visualization
-plt.figure(figsize=(10, 7))
-sns.scatterplot(x=y_test_biomass, y=y_pred_biomass, color='green', label='Predicted')
-plt.title('Biomass Energy Production: Actual vs. Predicted', fontsize=16)
-plt.xlabel('Actual Biomass Production (MW)', fontsize=14)
-plt.ylabel('Predicted Biomass Production (MW)', fontsize=14)
-plt.legend(fontsize=12)
-plt.show()
-
-plt.figure(figsize=(10, 7))
-plt.plot(y_test_biomass.values, label='Actual Biomass Production')
-plt.plot(y_pred_biomass, label='Predicted Biomass Production')
-plt.title('Biomass Energy Production: Actual vs. Predicted', fontsize=16)
-plt.xlabel('Time', fontsize=14)
-plt.ylabel('Biomass Production (MW)', fontsize=14)
-plt.legend(fontsize=12)
-plt.show()
-
-# Save the merged dataset with predictions
-merged_data['Predicted_Demand_MW'] = np.nan
-merged_data.loc[X_test.index, 'Predicted_Demand_MW'] = y_pred_demand
-
-merged_data['Predicted_Solar_MW'] = np.nan
-merged_data.loc[X_test_solar.index, 'Predicted_Solar_MW'] = y_pred_solar_corrected
-
-merged_data['Predicted_Wind_MW'] = np.nan
-merged_data.loc[X_test_wind.index, 'Predicted_Wind_MW'] = y_pred_wind
-
-merged_data['Predicted_Coal_MW'] = np.nan
-merged_data.loc[X_test_coal.index, 'Predicted_Coal_MW'] = y_pred_coal
-
-merged_data['Predicted_Hydrocarbons_MW'] = np.nan
-merged_data.loc[X_test_hydrocarbons.index, 'Predicted_Hydrocarbons_MW'] = y_pred_hydrocarbons
-
-merged_data['Predicted_Water_MW'] = np.nan
-merged_data.loc[X_test_water.index, 'Predicted_Water_MW'] = y_pred_water
-
-merged_data['Predicted_Nuclear_MW'] = np.nan
-merged_data.loc[X_test_nuclear.index, 'Predicted_Nuclear_MW'] = y_pred_nuclear
-
-merged_data['Predicted_Biomass_MW'] = np.nan
-merged_data.loc[X_test_biomass.index, 'Predicted_Biomass_MW'] = y_pred_biomass
-
-merged_data.to_csv('merged_energy_weather_predictions.csv')
-
-# Provide the path to the saved file
-print("Merged dataset with predictions saved to: merged_energy_weather_predictions.csv")
+print("Predictions saved to energy_predictions.csv")
