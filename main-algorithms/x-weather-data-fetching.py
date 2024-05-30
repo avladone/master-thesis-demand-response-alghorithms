@@ -1,89 +1,145 @@
-import requests
-import pandas as pd
+import os
 import time
-from datetime import datetime, timedelta
+import logging
+from selenium import webdriver
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait, Select
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.chrome.options import Options
+from selenium.common.exceptions import NoSuchElementException, TimeoutException, WebDriverException
+from webdriver_manager.chrome import ChromeDriverManager
 
-API_KEY = '2025c4940c2133be0650d1cf324d7bd0'  # Replace with your actual OpenWeatherMap API key
+# Set up logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logger = logging.getLogger()
 
-# List of coordinates for multiple locations in Romania
-locations = [
-    {'lat': 44.4268, 'lon': 26.1025},  # Bucharest
-    {'lat': 46.7712, 'lon': 23.6236},  # Cluj-Napoca
-    {'lat': 45.7489, 'lon': 21.2087},  # Timișoara
-    {'lat': 44.3302, 'lon': 23.7949},  # Craiova
-    {'lat': 44.1598, 'lon': 28.6348},  # Constanta
-    {'lat': 47.0722, 'lon': 21.9214},  # Oradea
-    {'lat': 46.5425, 'lon': 24.5575},  # Targul Mures
-    {'lat': 47.1585, 'lon': 27.6014},  # Iasi
-    {'lat': 46.6407, 'lon': 27.7276},  # Vaslui
-]
+# Download directory
+DOWNLOAD_DIR = "/path/to/download"  # Change this to your desired download directory
 
-# Function to fetch data for a single location and timestamp
-def fetch_data(lat, lon, timestamp):
-    url = f"http://api.openweathermap.org/data/2.5/onecall/timemachine"
-    params = {
-        'lat': lat,
-        'lon': lon,
-        'dt': timestamp,
-        'appid': API_KEY,
-        'units': 'metric'
-    }
-    response = requests.get(url, params=params)
-    data = response.json()
-    if 'hourly' in data:
-        return data['hourly']
-    else:
-        print(f"Error fetching data for {lat}, {lon} at {datetime.utcfromtimestamp(timestamp)}: {data}")
-        return []
+def setup_driver():
+    chrome_options = Options()
+    chrome_options.add_argument("--headless")
+    chrome_options.add_argument("--no-sandbox")
+    chrome_options.add_argument("--disable-dev-shm-usage")
+    chrome_options.add_argument("--disable-gpu")
+    prefs = {"download.default_directory": DOWNLOAD_DIR, "directory_upgrade": True}
+    chrome_options.add_experimental_option("prefs", prefs)
+    service = Service(ChromeDriverManager().install())
+    driver = webdriver.Chrome(service=service, options=chrome_options)
+    return driver
 
-# Define the start and end dates for 2023
-start_date = datetime(2023, 1, 1)
-end_date = datetime(2023, 12, 31, 23)  # 23:00 on Dec 31, 2023
+def wait_for_element(driver, by, value, timeout=30):
+    return WebDriverWait(driver, timeout).until(EC.presence_of_element_located((by, value)))
 
-# Create a DataFrame to store the results
-df_combined = pd.DataFrame(columns=['datetime', 'temperature', 'wind_speed', 'solar_radiation'])
+def switch_to_iframe_if_needed(driver, by, value):
+    iframes = driver.find_elements(By.TAG_NAME, 'iframe')
+    for iframe in iframes:
+        driver.switch_to.frame(iframe)
+        try:
+            driver.find_element(by, value)
+            return True
+        except NoSuchElementException:
+            driver.switch_to.default_content()
+    return False
 
-# Loop through each hour of the year
-current_date = start_date
-while current_date <= end_date:
-    timestamp = int(current_date.timestamp())
-    
-    # Initialize lists to store data from all locations
-    temps = []
-    wind_speeds = []
-    solar_radiations = []
-    
-    # Fetch data for each location
-    for location in locations:
-        hourly_data = fetch_data(location['lat'], location['lon'], timestamp)
-        for hour in hourly_data:
-            temps.append(hour['temp'])
-            wind_speeds.append(hour['wind_speed'])
-            solar_radiations.append(hour.get('solar_radiation', 0))  # Default to 0 if not available
-    
-    # If data was fetched successfully from at least one location, calculate the averages
-    if temps and wind_speeds and solar_radiations:
-        avg_temp = sum(temps) / len(temps)
-        avg_wind_speed = sum(wind_speeds) / len(wind_speeds)
-        avg_solar_radiation = sum(solar_radiations) / len(solar_radiations)
-    
-        # Append to the DataFrame
-        df_combined = df_combined.append({
-            'datetime': current_date,
-            'temperature': avg_temp,
-            'wind_speed': avg_wind_speed,
-            'solar_radiation': avg_solar_radiation
-        }, ignore_index=True)
-    else:
-        print(f"No valid data for {current_date}")
-    
-    # Move to the next hour
-    current_date += timedelta(hours=1)
-    
-    # Sleep to avoid hitting API rate limits
-    time.sleep(1)
+def download_weather_data(driver):
+    url = 'https://power.larc.nasa.gov/data-access-viewer/'
+    driver.get(url)
+    logger.info("Opened the webpage.")
 
-# Save to CSV
-df_combined.to_csv('average_weather_romania_2023.csv', index=False)
+    # Allow the page to load completely
+    time.sleep(5)
 
-print("Data collection complete. Saved to average_weather_romania_2023.csv.")
+    # Switch to the iframe if necessary
+    if not switch_to_iframe_if_needed(driver, By.ID, 'user_community'):
+        logger.error("Unable to find the user_community element within the iframes.")
+        return
+
+    # Choose a User Community
+    user_community_select = wait_for_element(driver, By.ID, 'user_community')
+    Select(user_community_select).select_by_visible_text('Renewable Energy')
+    logger.info("Selected User Community: Renewable Energy")
+
+    # Choose a Temporal Average
+    temporal_average_select = wait_for_element(driver, By.ID, 'temporal_average')
+    Select(temporal_average_select).select_by_visible_text('Hourly')
+    logger.info("Selected Temporal Average: Hourly")
+
+    # Enter Latitude and Longitude
+    lat_input = wait_for_element(driver, By.ID, 'lat')
+    lat_input.clear()
+    lat_input.send_keys('44.430')
+    logger.info("Entered Latitude: 44.430")
+
+    lon_input = wait_for_element(driver, By.ID, 'lon')
+    lon_input.clear()
+    lon_input.send_keys('26.113')
+    logger.info("Entered Longitude: 26.113")
+
+    # Enter Start Date
+    start_date_input = wait_for_element(driver, By.ID, 'start_date')
+    start_date_input.clear()
+    start_date_input.send_keys('01/01/2022')
+    logger.info("Entered Start Date: 01/01/2022")
+
+    # Enter End Date
+    end_date_input = wait_for_element(driver, By.ID, 'end_date')
+    end_date_input.clear()
+    end_date_input.send_keys('12/31/2022')
+    logger.info("Entered End Date: 12/31/2022")
+
+    # Select Output File Format
+    output_format_select = wait_for_element(driver, By.ID, 'output_format')
+    Select(output_format_select).select_by_visible_text('CSV')
+    logger.info("Selected Output File Format: CSV")
+
+    # Select Parameters (Assuming Solar Fluxes and Related -> Solar Irradiance)
+    parameters_search = wait_for_element(driver, By.ID, 'parameters_search')
+    parameters_search.send_keys('Solar Irradiance')
+    logger.info("Searched for Parameter: Solar Irradiance")
+
+    # Wait for search results to populate and select parameter
+    time.sleep(2)
+    solar_irradiance_checkbox = wait_for_element(driver, By.XPATH, "//label[text()='Solar Irradiance']/preceding-sibling::input")
+    solar_irradiance_checkbox.click()
+    logger.info("Selected Parameter: Solar Irradiance")
+
+    # Submit the form
+    submit_button = wait_for_element(driver, By.ID, 'submit_button')
+    submit_button.click()
+    logger.info("Submitted the form.")
+
+    # Allow time for the file to be generated and downloaded
+    time.sleep(60)
+    logger.info("Waited for the file to be generated and downloaded.")
+
+def main():
+    max_retries = 3
+    for attempt in range(max_retries):
+        try:
+            # Set up the WebDriver
+            driver = setup_driver()
+            logger.info("WebDriver setup complete.")
+
+            # Download the weather data
+            download_weather_data(driver)
+            logger.info("Weather data download process completed successfully.")
+            break
+        except (TimeoutException, WebDriverException) as e:
+            logger.error(f"An error occurred (attempt {attempt + 1} of {max_retries}): {e}")
+            if attempt < max_retries - 1:
+                logger.info("Retrying...")
+                time.sleep(5)
+            else:
+                logger.error("Max retries reached. Exiting.")
+        finally:
+            driver.quit()
+            logger.info("Closed the WebDriver.")
+
+if __name__ == "__main__":
+    # Ensure the download directory exists
+    if not os.path.exists(DOWNLOAD_DIR):
+        os.makedirs(DOWNLOAD_DIR)
+
+    main()

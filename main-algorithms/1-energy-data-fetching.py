@@ -6,8 +6,6 @@ that can be used as inputs in the next files.
 
 import pandas as pd
 import numpy as np
-from openpyxl import Workbook
-from openpyxl.utils.dataframe import dataframe_to_rows
 
 # Load the data
 file_path = 'Grafic_SEN.xlsx'

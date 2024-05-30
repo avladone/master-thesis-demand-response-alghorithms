@@ -102,7 +102,6 @@ ax1.xaxis.set_major_locator(months)
 ax1.xaxis.set_major_formatter(month_fmt)
 ax1.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
 ax1.grid(True)
-plt.savefig('monthly_demand_production_export.png')
 plt.show()
 
 # Graph 2: All Production Types + Import
@@ -119,5 +118,4 @@ month_fmt = mdates.DateFormatter('%b')
 ax1.xaxis.set_major_locator(months)
 ax1.xaxis.set_major_formatter(month_fmt)
 ax1.grid(True)
-plt.savefig('monthly_production_import.png')
 plt.show()

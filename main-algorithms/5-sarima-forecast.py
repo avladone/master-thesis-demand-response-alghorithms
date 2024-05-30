@@ -59,3 +59,5 @@ sarima_forecast(energy_data, 'Hydrocarbons_MW', 'Hydrocarbons Energy Production'
 sarima_forecast(energy_data, 'Water_MW', 'Water Energy Production')
 sarima_forecast(energy_data, 'Nuclear_MW', 'Nuclear Energy Production')
 sarima_forecast(energy_data, 'Biomass_MW', 'Biomass Energy Production')
+sarima_forecast(energy_data, 'Import_Positive_MW', 'Imported Energy')
+sarima_forecast(energy_data, 'Export_Positive_MW', 'Exported Energy')

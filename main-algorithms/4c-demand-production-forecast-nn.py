@@ -1,5 +1,5 @@
 """
-This script predicts energy demand and production using weather data.
+This script predicts energy demand and production using neural networks.
 """
 
 # Step 1: Import Libraries and Load Datasets
@@ -9,9 +9,13 @@ import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 from sklearn.model_selection import train_test_split
-from sklearn.ensemble import RandomForestRegressor
+from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import mean_squared_error
 from math import sqrt
+import tensorflow as tf
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Dense
+from tensorflow.keras.callbacks import EarlyStopping
 
 # Load merged dataset
 merged_data = pd.read_csv('merged_energy_weather_data.csv')
@@ -31,69 +35,56 @@ y_biomass = merged_data['Biomass_MW']
 y_import = merged_data['Import_Positive_MW']
 y_export = merged_data['Export_Positive_MW']
 
-# Demand forecasting model
-X_train, X_test, y_train, y_test = train_test_split(X, y_demand, test_size=0.2, random_state=42)
-demand_model = RandomForestRegressor(random_state=42)
-demand_model.fit(X_train, y_train)
-y_pred_demand = demand_model.predict(X_test)
+# Standardize the features
+scaler = StandardScaler()
+X_scaled = scaler.fit_transform(X)
 
-# Setup for all energy production models
-solar_model = RandomForestRegressor(random_state=42)
-wind_model = RandomForestRegressor(random_state=42)
-coal_model = RandomForestRegressor(random_state=42)
-hydrocarbons_model = RandomForestRegressor(random_state=42)
-water_model = RandomForestRegressor(random_state=42)
-nuclear_model = RandomForestRegressor(random_state=42)
-biomass_model = RandomForestRegressor(random_state=42)
-import_model = RandomForestRegressor(random_state=42)
-export_model = RandomForestRegressor(random_state=42)
+# Split the data
+X_train, X_test, y_train_demand, y_test_demand = train_test_split(X_scaled, y_demand, test_size=0.2, random_state=42)
+_, _, y_train_solar, y_test_solar = train_test_split(X_scaled, y_solar, test_size=0.2, random_state=42)
+_, _, y_train_wind, y_test_wind = train_test_split(X_scaled, y_wind, test_size=0.2, random_state=42)
+_, _, y_train_coal, y_test_coal = train_test_split(X_scaled, y_coal, test_size=0.2, random_state=42)
+_, _, y_train_hydrocarbons, y_test_hydrocarbons = train_test_split(X_scaled, y_hydrocarbons, test_size=0.2, random_state=42)
+_, _, y_train_water, y_test_water = train_test_split(X_scaled, y_water, test_size=0.2, random_state=42)
+_, _, y_train_nuclear, y_test_nuclear = train_test_split(X_scaled, y_nuclear, test_size=0.2, random_state=42)
+_, _, y_train_biomass, y_test_biomass = train_test_split(X_scaled, y_biomass, test_size=0.2, random_state=42)
+_, _, y_train_import, y_test_import = train_test_split(X_scaled, y_import, test_size=0.2, random_state=42)
+_, _, y_train_export, y_test_export = train_test_split(X_scaled, y_export, test_size=0.2, random_state=42)
 
-# Align indices after filtering out zero solar production
-X = X.reset_index(drop=True)
-y_solar = y_solar.reset_index(drop=True)
-y_wind = y_wind.reset_index(drop=True)
-y_coal = y_coal.reset_index(drop=True)
-y_hydrocarbons = y_hydrocarbons.reset_index(drop=True)
-y_water = y_water.reset_index(drop=True)
-y_nuclear = y_nuclear.reset_index(drop=True)
-y_biomass = y_biomass.reset_index(drop=True)
-y_import = y_import.reset_index(drop=True)
-y_export = y_export.reset_index(drop=True)
+# Define the neural network model
+def create_model():
+    model = Sequential([
+        Dense(64, activation='relu', input_shape=(X_train.shape[1],)),
+        Dense(64, activation='relu'),
+        Dense(1)
+    ])
+    model.compile(optimizer='adam', loss='mse')
+    return model
 
-# Training and prediction for all energy productions
-X_train_solar, X_test_solar, y_train_solar, y_test_solar = train_test_split(X, y_solar, test_size=0.2, random_state=42)
-X_train_wind, X_test_wind, y_train_wind, y_test_wind = train_test_split(X, y_wind, test_size=0.2, random_state=42)
-X_train_coal, X_test_coal, y_train_coal, y_test_coal = train_test_split(X, y_coal, test_size=0.2, random_state=42)
-X_train_hydrocarbons, X_test_hydrocarbons, y_train_hydrocarbons, y_test_hydrocarbons = train_test_split(X, y_hydrocarbons, test_size=0.2, random_state=42)
-X_train_water, X_test_water, y_train_water, y_test_water = train_test_split(X, y_water, test_size=0.2, random_state=42)
-X_train_nuclear, X_test_nuclear, y_train_nuclear, y_test_nuclear = train_test_split(X, y_nuclear, test_size=0.2, random_state=42)
-X_train_biomass, X_test_biomass, y_train_biomass, y_test_biomass = train_test_split(X, y_biomass, test_size=0.2, random_state=42)
-X_train_import, X_test_import, y_train_import, y_test_import = train_test_split(X, y_import, test_size=0.2, random_state=42)
-X_train_export, X_test_export, y_train_export, y_test_export = train_test_split(X, y_export, test_size=0.2, random_state=42)
+# Define early stopping
+early_stop = EarlyStopping(monitor='val_loss', patience=10)
 
-solar_model.fit(X_train_solar, y_train_solar)
-wind_model.fit(X_train_wind, y_train_wind)
-coal_model.fit(X_train_coal, y_train_coal)
-hydrocarbons_model.fit(X_train_hydrocarbons, y_train_hydrocarbons)
-water_model.fit(X_train_water, y_train_water)
-nuclear_model.fit(X_train_nuclear, y_train_nuclear)
-biomass_model.fit(X_train_biomass, y_train_biomass)
-import_model.fit(X_train_import, y_train_import)
-export_model.fit(X_train_export, y_train_export)
+# Train and predict function
+def train_and_predict(X_train, y_train, X_test):
+    model = create_model()
+    model.fit(X_train, y_train, validation_split=0.2, epochs=100, callbacks=[early_stop], verbose=1)
+    y_pred = model.predict(X_test).flatten()
+    return y_pred
 
-y_pred_solar = solar_model.predict(X_test_solar)
-y_pred_wind = wind_model.predict(X_test_wind)
-y_pred_coal = coal_model.predict(X_test_coal)
-y_pred_hydrocarbons = hydrocarbons_model.predict(X_test_hydrocarbons)
-y_pred_water = water_model.predict(X_test_water)
-y_pred_nuclear = nuclear_model.predict(X_test_nuclear)
-y_pred_biomass = biomass_model.predict(X_test_biomass)
-y_pred_import = import_model.predict(X_test_import)
-y_pred_export = export_model.predict(X_test_export)
+# Predict all targets
+y_pred_demand = train_and_predict(X_train, y_train_demand, X_test)
+y_pred_solar = train_and_predict(X_train, y_train_solar, X_test)
+y_pred_wind = train_and_predict(X_train, y_train_wind, X_test)
+y_pred_coal = train_and_predict(X_train, y_train_coal, X_test)
+y_pred_hydrocarbons = train_and_predict(X_train, y_train_hydrocarbons, X_test)
+y_pred_water = train_and_predict(X_train, y_train_water, X_test)
+y_pred_nuclear = train_and_predict(X_train, y_train_nuclear, X_test)
+y_pred_biomass = train_and_predict(X_train, y_train_biomass, X_test)
+y_pred_import = train_and_predict(X_train, y_train_import, X_test)
+y_pred_export = train_and_predict(X_train, y_train_export, X_test)
 
 # Correct solar predictions where actuals are zero
-actual_zeros = merged_data[merged_data['Solar_MW'] == 0].index
-mask_zeros_in_actuals = X_test_solar.index.isin(actual_zeros)
+mask_zeros_in_actuals = y_test_solar == 0
 y_pred_solar_corrected = np.where(mask_zeros_in_actuals, 0, y_pred_solar)
 
 # Function to calculate RMSE percentage
@@ -107,7 +98,7 @@ def relative_error(true_values, predicted_values):
     return ((true_values - predicted_values) / true_values) * 100
 
 # Calculate RMSE for forecasts
-demand_rmse = rmse_percentage(y_test, y_pred_demand)
+demand_rmse = rmse_percentage(y_test_demand, y_pred_demand)
 solar_rmse = rmse_percentage(y_test_solar, y_pred_solar_corrected)
 wind_rmse = rmse_percentage(y_test_wind, y_pred_wind)
 coal_rmse = rmse_percentage(y_test_coal, y_pred_coal)
@@ -131,7 +122,7 @@ print(f"Import Forecast RMSE (%): {import_rmse}")
 print(f"Export Forecast RMSE (%): {export_rmse}")
 
 # Calculate relative errors for forecasts
-demand_relative_error = relative_error(y_test, y_pred_demand)
+demand_relative_error = relative_error(y_test_demand, y_pred_demand)
 solar_relative_error = relative_error(y_test_solar, y_pred_solar_corrected)
 wind_relative_error = relative_error(y_test_wind, y_pred_wind)
 coal_relative_error = relative_error(y_test_coal, y_pred_coal)
@@ -143,7 +134,7 @@ import_relative_error = relative_error(y_test_import, y_pred_import)
 export_relative_error = relative_error(y_test_export, y_pred_export)
 
 # Create dataframes for actual and predicted values
-df_demand = pd.DataFrame({'Actual': y_test, 'Predicted': y_pred_demand})
+df_demand = pd.DataFrame({'Actual': y_test_demand, 'Predicted': y_pred_demand})
 df_solar = pd.DataFrame({'Actual': y_test_solar, 'Predicted': y_pred_solar_corrected})
 df_wind = pd.DataFrame({'Actual': y_test_wind, 'Predicted': y_pred_wind})
 df_coal = pd.DataFrame({'Actual': y_test_coal, 'Predicted': y_pred_coal})
@@ -160,7 +151,7 @@ def plot_actual_vs_predicted(df, title):
     plt.plot(df['Actual'].values, label='Actual')
     plt.plot(df['Predicted'].values, label='Predicted')
     plt.title(title, fontsize=16)
-    plt.xlabel('Time', fontsize=14) 
+    plt.xlabel('Time', fontsize=14)
     plt.ylabel('Values', fontsize=14)
     plt.legend(fontsize=12)
     plt.show()
@@ -245,6 +236,6 @@ df_predictions = pd.DataFrame({
 })
 
 # Save predictions to CSV
-df_predictions.to_csv('energy_predictions.csv', index=False)
+df_predictions.to_csv('energy_predictions_nn.csv', index=False)
 
-print("Predictions saved to energy_predictions.csv")
+print("Predictions saved to energy_predictions_nn.csv")

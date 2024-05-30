@@ -1,5 +1,5 @@
 """
-This script predicts energy demand and production using weather data.
+This script predicts energy demand and production using weather data with Gradient Boosting Machines.
 """
 
 # Step 1: Import Libraries and Load Datasets
@@ -9,7 +9,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 from sklearn.model_selection import train_test_split
-from sklearn.ensemble import RandomForestRegressor
+from sklearn.ensemble import GradientBoostingRegressor
 from sklearn.metrics import mean_squared_error
 from math import sqrt
 
@@ -33,20 +33,20 @@ y_export = merged_data['Export_Positive_MW']
 
 # Demand forecasting model
 X_train, X_test, y_train, y_test = train_test_split(X, y_demand, test_size=0.2, random_state=42)
-demand_model = RandomForestRegressor(random_state=42)
+demand_model = GradientBoostingRegressor(random_state=42)
 demand_model.fit(X_train, y_train)
 y_pred_demand = demand_model.predict(X_test)
 
 # Setup for all energy production models
-solar_model = RandomForestRegressor(random_state=42)
-wind_model = RandomForestRegressor(random_state=42)
-coal_model = RandomForestRegressor(random_state=42)
-hydrocarbons_model = RandomForestRegressor(random_state=42)
-water_model = RandomForestRegressor(random_state=42)
-nuclear_model = RandomForestRegressor(random_state=42)
-biomass_model = RandomForestRegressor(random_state=42)
-import_model = RandomForestRegressor(random_state=42)
-export_model = RandomForestRegressor(random_state=42)
+solar_model = GradientBoostingRegressor(random_state=42)
+wind_model = GradientBoostingRegressor(random_state=42)
+coal_model = GradientBoostingRegressor(random_state=42)
+hydrocarbons_model = GradientBoostingRegressor(random_state=42)
+water_model = GradientBoostingRegressor(random_state=42)
+nuclear_model = GradientBoostingRegressor(random_state=42)
+biomass_model = GradientBoostingRegressor(random_state=42)
+import_model = GradientBoostingRegressor(random_state=42)
+export_model = GradientBoostingRegressor(random_state=42)
 
 # Align indices after filtering out zero solar production
 X = X.reset_index(drop=True)
@@ -245,6 +245,6 @@ df_predictions = pd.DataFrame({
 })
 
 # Save predictions to CSV
-df_predictions.to_csv('energy_predictions.csv', index=False)
+df_predictions.to_csv('energy_predictions_gbm.csv', index=False)
 
-print("Predictions saved to energy_predictions.csv")
+print("Predictions saved to energy_predictions_gbm.csv")

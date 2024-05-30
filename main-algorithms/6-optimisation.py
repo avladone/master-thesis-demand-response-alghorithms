@@ -10,9 +10,7 @@ import matplotlib.pyplot as plt
 import pulp
 
 # Load predicted energy data
-predicted_data = pd.read_csv('energy_predictions.csv')
-predicted_data['Date'] = pd.to_datetime(predicted_data['Date'])
-predicted_data.set_index('Date', inplace=True)
+predicted_data = pd.read_csv('energy_predictions_gbm.csv')
 
 # Calculate average predictions
 avg_predicted_demand = np.mean(predicted_data['Predicted_Demand_MW'])
@@ -100,10 +98,10 @@ print(f"Economic Savings: ${savings}")
 # Visualization
 plt.figure(figsize=(10,6))
 plt.bar(
-    ['Coal', 'Hydrocarbons', 'Water', 'Nuclear', 'Biomass', 'Import', 'Export', 'Solar', 'Wind'],
+    ['Coal', 'Hydrocarbons', 'Water', 'Nuclear', 'Biomass', 'Import', 'Solar', 'Wind'],
     [coal_supply.varValue, hydrocarbons_supply.varValue, water_supply.varValue, nuclear_supply.varValue, 
-     biomass_supply.varValue, import_supply.varValue, export_supply.varValue, solar_supply.varValue, wind_supply.varValue],
-    color=['brown', 'orange', 'blue', 'red', 'green', 'purple', 'cyan', 'yellow', 'green']
+     biomass_supply.varValue, import_supply.varValue, solar_supply.varValue, wind_supply.varValue],
+    color=['brown', 'orange', 'blue', 'red', 'green', 'purple', 'yellow', 'green']
 )
 plt.title('Optimized Energy Supply Distribution')
 plt.xlabel('Energy Source')

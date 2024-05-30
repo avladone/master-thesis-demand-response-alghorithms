@@ -14,7 +14,7 @@ energy_hourly['Date'] = pd.to_datetime(energy_hourly['Date'])
 energy_hourly.set_index('Date', inplace=True)
 
 # Load weather dataset
-weather_data = pd.read_csv('weather_hourly.csv')
+weather_data = pd.read_csv('weather_hourly_2023.csv')
 
 # Ensure 'Date' columns are in datetime format
 weather_data['Date'] = pd.to_datetime(weather_data['Date'])
