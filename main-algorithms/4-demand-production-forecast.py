@@ -2,19 +2,14 @@
 This script predicts energy demand and production using weather data.
 """
 
-# Step 1: Import Libraries and Load Datasets
-
 import pandas as pd
 import numpy as np
-import matplotlib.pyplot as plt
-import seaborn as sns
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestRegressor
-from sklearn.metrics import mean_squared_error
-from math import sqrt
+from utilities import plot_actual_vs_predicted, plot_scatter, rmse_percentage, relative_error, plot_relative_error
 
 # Load merged dataset
-merged_data = pd.read_csv('merged_energy_weather_data.csv')
+merged_data = pd.read_csv('data/outputs/merged_energy_weather_data.csv')
 merged_data['Date'] = pd.to_datetime(merged_data['Date'])
 merged_data.set_index('Date', inplace=True)
 
@@ -96,16 +91,6 @@ actual_zeros = merged_data[merged_data['Solar_MW'] == 0].index
 mask_zeros_in_actuals = X_test_solar.index.isin(actual_zeros)
 y_pred_solar_corrected = np.where(mask_zeros_in_actuals, 0, y_pred_solar)
 
-# Function to calculate RMSE percentage
-def rmse_percentage(true_values, predicted_values):
-    rmse = sqrt(mean_squared_error(true_values, predicted_values))
-    average = np.mean(true_values)
-    return (rmse / average) * 100
-
-# Function to calculate relative error
-def relative_error(true_values, predicted_values):
-    return ((true_values - predicted_values) / true_values) * 100
-
 # Calculate RMSE for forecasts
 demand_rmse = rmse_percentage(y_test, y_pred_demand)
 solar_rmse = rmse_percentage(y_test_solar, y_pred_solar_corrected)
@@ -154,17 +139,7 @@ df_biomass = pd.DataFrame({'Actual': y_test_biomass, 'Predicted': y_pred_biomass
 df_import = pd.DataFrame({'Actual': y_test_import, 'Predicted': y_pred_import})
 df_export = pd.DataFrame({'Actual': y_test_export, 'Predicted': y_pred_export})
 
-# Create line graphs for actual vs. predicted values
-def plot_actual_vs_predicted(df, title):
-    plt.figure(figsize=(10, 7))
-    plt.plot(df['Actual'].values, label='Actual')
-    plt.plot(df['Predicted'].values, label='Predicted')
-    plt.title(title, fontsize=16)
-    plt.xlabel('Time', fontsize=14) 
-    plt.ylabel('Values', fontsize=14)
-    plt.legend(fontsize=12)
-    plt.show()
-
+# Plot actual vs predicted values
 plot_actual_vs_predicted(df_demand, 'Energy Demand: Actual vs. Predicted')
 plot_actual_vs_predicted(df_solar, 'Solar Energy Production: Actual vs. Predicted')
 plot_actual_vs_predicted(df_wind, 'Wind Energy Production: Actual vs. Predicted')
@@ -177,26 +152,16 @@ plot_actual_vs_predicted(df_import, 'Import: Actual vs. Predicted')
 plot_actual_vs_predicted(df_export, 'Export: Actual vs. Predicted')
 
 # Scatter Plots for Actual vs. Predicted Values
-
-def plot_scatter(df, title, x_label, y_label, color):
-    plt.figure(figsize=(10, 7))
-    sns.scatterplot(x=df['Actual'], y=df['Predicted'], color=color, label='Predicted')
-    plt.title(title, fontsize=16)
-    plt.xlabel(x_label, fontsize=14)
-    plt.ylabel(y_label, fontsize=14)
-    plt.legend(fontsize=12)
-    plt.show()
-
-plot_scatter(df_demand, 'Energy Demand: Actual vs. Predicted', 'Actual Demand (MW)', 'Predicted Demand (MW)', 'blue')
-plot_scatter(df_solar, 'Solar Energy Production: Actual vs. Predicted', 'Actual Solar Production (MW)', 'Predicted Solar Production (MW)', 'green')
-plot_scatter(df_wind, 'Wind Energy Production: Actual vs. Predicted', 'Actual Wind Production (MW)', 'Predicted Wind Production (MW)', 'purple')
-plot_scatter(df_coal, 'Coal Energy Production: Actual vs. Predicted', 'Actual Coal Production (MW)', 'Predicted Coal Production (MW)', 'brown')
-plot_scatter(df_hydrocarbons, 'Hydrocarbons Energy Production: Actual vs. Predicted', 'Actual Hydrocarbons Production (MW)', 'Predicted Hydrocarbons Production (MW)', 'orange')
-plot_scatter(df_water, 'Water Energy Production: Actual vs. Predicted', 'Actual Water Production (MW)', 'Predicted Water Production (MW)', 'blue')
-plot_scatter(df_nuclear, 'Nuclear Energy Production: Actual vs. Predicted', 'Actual Nuclear Production (MW)', 'Predicted Nuclear Production (MW)', 'red')
-plot_scatter(df_biomass, 'Biomass Energy Production: Actual vs. Predicted', 'Actual Biomass Production (MW)', 'Predicted Biomass Production (MW)', 'green')
-plot_scatter(df_import, 'Import: Actual vs. Predicted', 'Actual Import (MW)', 'Predicted Import (MW)', 'cyan')
-plot_scatter(df_export, 'Export: Actual vs. Predicted', 'Actual Export (MW)', 'Predicted Export (MW)', 'magenta')
+plot_scatter(df_demand, 'Actual', 'Predicted', 'Energy Demand: Actual vs. Predicted', 'Actual', 'Predicted', 'blue')
+plot_scatter(df_solar, 'Actual', 'Predicted', 'Solar Energy Production: Actual vs. Predicted', 'Actual', 'Predicted', 'green')
+plot_scatter(df_wind, 'Actual', 'Predicted', 'Wind Energy Production: Actual vs. Predicted', 'Actual', 'Predicted', 'purple')
+plot_scatter(df_coal, 'Actual', 'Predicted', 'Coal Energy Production: Actual vs. Predicted', 'Actual', 'Predicted', 'brown')
+plot_scatter(df_hydrocarbons, 'Actual', 'Predicted', 'Hydrocarbons Energy Production: Actual vs. Predicted', 'Actual', 'Predicted', 'orange')
+plot_scatter(df_water, 'Actual', 'Predicted', 'Water Energy Production: Actual vs. Predicted', 'Actual', 'Predicted', 'blue')
+plot_scatter(df_nuclear, 'Actual', 'Predicted', 'Nuclear Energy Production: Actual vs. Predicted', 'Actual', 'Predicted', 'red')
+plot_scatter(df_biomass, 'Actual', 'Predicted', 'Biomass Energy Production: Actual vs. Predicted', 'Actual', 'Predicted', 'green')
+plot_scatter(df_import, 'Actual', 'Predicted', 'Import: Actual vs. Predicted', 'Actual', 'Predicted', 'cyan')
+plot_scatter(df_export, 'Actual', 'Predicted', 'Export: Actual vs. Predicted', 'Actual', 'Predicted', 'magenta')
 
 # Create dataframes for relative errors
 df_relative_error_demand = pd.DataFrame({'Relative_Error': demand_relative_error})
@@ -210,15 +175,7 @@ df_relative_error_biomass = pd.DataFrame({'Relative_Error': biomass_relative_err
 df_relative_error_import = pd.DataFrame({'Relative_Error': import_relative_error})
 df_relative_error_export = pd.DataFrame({'Relative_Error': export_relative_error})
 
-# Create line graphs for relative errors
-def plot_relative_error(df, title):
-    plt.figure(figsize=(10, 7))
-    plt.plot(df['Relative_Error'].values)
-    plt.title(title, fontsize=16)
-    plt.xlabel('Time', fontsize=14)
-    plt.ylabel('Relative Error (%)', fontsize=14)
-    plt.show()
-
+# Plot relative error
 plot_relative_error(df_relative_error_demand, 'Relative Error: Energy Demand')
 plot_relative_error(df_relative_error_solar, 'Relative Error: Solar Energy Production')
 plot_relative_error(df_relative_error_wind, 'Relative Error: Wind Energy Production')
@@ -245,6 +202,6 @@ df_predictions = pd.DataFrame({
 })
 
 # Save predictions to CSV
-df_predictions.to_csv('energy_predictions.csv', index=False)
+df_predictions.to_csv('data/outputs/energy_predictions.csv', index=False)
 
-print("Predictions saved to energy_predictions.csv")
+print("Predictions saved to data/outputs/energy_predictions.csv")

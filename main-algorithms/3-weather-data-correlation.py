@@ -2,19 +2,16 @@
 This script loads hourly weather data, merges it with the energy data, and performs correlation analysis.
 """
 
-# Import Libraries and Load Datasets
-
 import pandas as pd
-import matplotlib.pyplot as plt
-import seaborn as sns
+from utilities import plot_scatter, plot_correlation_heatmap
 
 # Load energy dataset
-energy_hourly = pd.read_csv('energy_hourly.csv')
+energy_hourly = pd.read_csv('data/outputs/energy_hourly.csv')
 energy_hourly['Date'] = pd.to_datetime(energy_hourly['Date'])
 energy_hourly.set_index('Date', inplace=True)
 
 # Load weather dataset
-weather_data = pd.read_csv('weather_hourly_2023.csv')
+weather_data = pd.read_csv('data/inputs/weather_hourly_2023.csv')
 
 # Ensure 'Date' columns are in datetime format
 weather_data['Date'] = pd.to_datetime(weather_data['Date'])
@@ -46,21 +43,7 @@ correlation = filtered_solar_data[[
 ]].corr()
 
 # Visualize Correlations
-
-plt.figure(figsize=(10, 8))
-sns.heatmap(correlation, annot=True, cmap='coolwarm', linewidths=0.5)
-plt.title('Correlation Matrix Heatmap')
-plt.show()
-
-# Define a function for creating scatter plots
-def plot_scatter(data, x_col, y_col, title, x_label, y_label):
-    plt.figure(figsize=(10, 6))
-    plt.scatter(data[x_col], data[y_col], alpha=0.5)
-    plt.title(title)
-    plt.xlabel(x_label)
-    plt.ylabel(y_label)
-    plt.grid(True)
-    plt.show()
+plot_correlation_heatmap(correlation, 'Correlation Matrix Heatmap')
 
 # Scatter plot for significant correlations
 plot_scatter(filtered_solar_data, 'SolarRadiation_WM2', 'Solar_MW', 
@@ -72,7 +55,7 @@ plot_scatter(filtered_solar_data, 'AvgWindSpeed_kmh', 'Wind_MW',
              'Wind Speed (km/h)', 'Wind Energy Production (MW)')
 
 # Save the merged dataset
-merged_data.to_csv('merged_energy_weather_data.csv')
+merged_data.to_csv('data/outputs/merged_energy_weather_data.csv')
 
 # Provide the path to the saved file
-print("Merged dataset saved to: merged_energy_weather_data.csv")
+print("Merged dataset saved to: data/outputs/merged_energy_weather_data.csv")

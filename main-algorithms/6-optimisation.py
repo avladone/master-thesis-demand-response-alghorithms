@@ -2,15 +2,13 @@
 This script performs grid optimization using the predicted energy data.
 """
 
-# Step 1: Import Libraries and Load Datasets
-
 import pandas as pd
 import numpy as np
-import matplotlib.pyplot as plt
-import pulp
+from pulp import LpVariable, LpProblem, LpMinimize, LpStatus, value as lp_value
+from utilities import plot_optimized_energy_distribution, plot_impact_assessment
 
 # Load predicted energy data
-predicted_data = pd.read_csv('energy_predictions_gbm.csv')
+predicted_data = pd.read_csv('data/outputs/energy_predictions.csv')
 
 # Calculate average predictions
 avg_predicted_demand = np.mean(predicted_data['Predicted_Demand_MW'])
@@ -35,18 +33,18 @@ import_cost_per_kwh = 0.20
 export_income_per_kwh = 0.15
 
 # Define optimization problem
-problem = pulp.LpProblem("Energy_Optimization", pulp.LpMinimize)
+problem = LpProblem("Energy_Optimization", LpMinimize)
 
 # Define variables for the optimization problem
-coal_supply = pulp.LpVariable("Coal_Supply", lowBound=0, upBound=avg_predicted_coal)
-hydrocarbons_supply = pulp.LpVariable("Hydrocarbons_Supply", lowBound=0, upBound=avg_predicted_hydrocarbons)
-water_supply = pulp.LpVariable("Water_Supply", lowBound=0, upBound=avg_predicted_water)
-nuclear_supply = pulp.LpVariable("Nuclear_Supply", lowBound=0, upBound=avg_predicted_nuclear)
-biomass_supply = pulp.LpVariable("Biomass_Supply", lowBound=0, upBound=avg_predicted_biomass)
-import_supply = pulp.LpVariable("Import_Supply", lowBound=0, upBound=avg_predicted_import)
-export_supply = pulp.LpVariable("Export_Supply", lowBound=0, upBound=avg_predicted_export)
-solar_supply = pulp.LpVariable("Solar_Supply", lowBound=0, upBound=avg_predicted_solar)
-wind_supply = pulp.LpVariable("Wind_Supply", lowBound=0, upBound=avg_predicted_wind)
+coal_supply = LpVariable("Coal_Supply", lowBound=0, upBound=avg_predicted_coal)
+hydrocarbons_supply = LpVariable("Hydrocarbons_Supply", lowBound=0, upBound=avg_predicted_hydrocarbons)
+water_supply = LpVariable("Water_Supply", lowBound=0, upBound=avg_predicted_water)
+nuclear_supply = LpVariable("Nuclear_Supply", lowBound=0, upBound=avg_predicted_nuclear)
+biomass_supply = LpVariable("Biomass_Supply", lowBound=0, upBound=avg_predicted_biomass)
+import_supply = LpVariable("Import_Supply", lowBound=0, upBound=avg_predicted_import)
+export_supply = LpVariable("Export_Supply", lowBound=0, upBound=avg_predicted_export)
+solar_supply = LpVariable("Solar_Supply", lowBound=0, upBound=avg_predicted_solar)
+wind_supply = LpVariable("Wind_Supply", lowBound=0, upBound=avg_predicted_wind)
 
 # Objective Function: Minimize total cost considering export income
 problem += (
@@ -71,48 +69,41 @@ problem += (
 problem.solve()
 
 # Check solution status
-if pulp.LpStatus[problem.status] == 'Optimal':
-    print(f"Optimal coal supply: {coal_supply.varValue} MW")
-    print(f"Optimal hydrocarbons supply: {hydrocarbons_supply.varValue} MW")
-    print(f"Optimal water supply: {water_supply.varValue} MW")
-    print(f"Optimal nuclear supply: {nuclear_supply.varValue} MW")
-    print(f"Optimal biomass supply: {biomass_supply.varValue} MW")
-    print(f"Optimal import supply: {import_supply.varValue} MW")
-    print(f"Optimal export supply: {export_supply.varValue} MW")
-    print(f"Optimal solar supply: {solar_supply.varValue} MW")
-    print(f"Optimal wind supply: {wind_supply.varValue} MW")
+if LpStatus[problem.status] == 'Optimal':
+    optimal_supplies = {
+        'Coal': coal_supply.varValue,
+        'Hydrocarbons': hydrocarbons_supply.varValue,
+        'Water': water_supply.varValue,
+        'Nuclear': nuclear_supply.varValue,
+        'Biomass': biomass_supply.varValue,
+        'Import': import_supply.varValue,
+        'Export': export_supply.varValue,
+        'Solar': solar_supply.varValue,
+        'Wind': wind_supply.varValue
+    }
+
+    for supply, supply_value in optimal_supplies.items():
+        print(f"Optimal {supply.lower()} supply: {supply_value:.2f} MW")
 else:
     print("Optimization did not find a feasible solution.")
-    
-# Step 8: Impact Assessment and Visualization
-emissions_saved_kg = (
-    solar_supply.varValue + wind_supply.varValue
-) * grid_emission_factor
+
+# Impact Assessment
+emissions_saved_kg = (solar_supply.varValue + wind_supply.varValue) * grid_emission_factor
 cost_with_grid_only = avg_predicted_demand * import_cost_per_kwh
-cost_with_optimization = pulp.value(problem.objective)
+cost_with_optimization = lp_value(problem.objective)
 savings = cost_with_grid_only - cost_with_optimization
 
-print(f"Emissions Saved: {emissions_saved_kg} kg CO2")
-print(f"Economic Savings: ${savings}")
+print(f"Emissions Saved: {emissions_saved_kg:.2f} kg CO2")
+print(f"Economic Savings: ${savings:.2f}")
 
 # Visualization
-plt.figure(figsize=(10,6))
-plt.bar(
-    ['Coal', 'Hydrocarbons', 'Water', 'Nuclear', 'Biomass', 'Import', 'Solar', 'Wind'],
-    [coal_supply.varValue, hydrocarbons_supply.varValue, water_supply.varValue, nuclear_supply.varValue, 
-     biomass_supply.varValue, import_supply.varValue, solar_supply.varValue, wind_supply.varValue],
-    color=['brown', 'orange', 'blue', 'red', 'green', 'purple', 'yellow', 'green']
-)
-plt.title('Optimized Energy Supply Distribution')
-plt.xlabel('Energy Source')
-plt.ylabel('Energy Supplied (MW)')
-plt.show()
+plot_optimized_energy_distribution(optimal_supplies)
+plot_impact_assessment(emissions_saved_kg, savings)
 
-plt.figure(figsize=(10,6))
-plt.bar(
-    ['CO2 Emissions Saved (kg)', 'Economic Savings ($)'],
-    [emissions_saved_kg, savings],
-    color=['red', 'green']
-)
-plt.title('Environmental and Economic Impact of Optimization')
-plt.show()
+# Create a DataFrame with the results
+optimal_production_df = pd.DataFrame.from_dict(optimal_supplies, orient='index', columns=['Optimal Production'])
+
+# Save the results to a CSV file
+optimal_production_df.to_csv('data/outputs/optimal_production.csv')
+
+print("Optimal production saved to data/outputs/optimal_production.csv")

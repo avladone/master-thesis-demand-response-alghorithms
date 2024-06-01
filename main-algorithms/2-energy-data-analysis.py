@@ -5,14 +5,13 @@ It also does preliminary analysis, by creating plots in order to visualize the
 data.
 """
 
-# Step 1: Import Libraries and Load Datasets
-
 import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
+from utilities import plot_line_with_rolling_mean
 
 # Load energy dataset
-energy_data = pd.read_csv('cleaned_Grafic_SEN.csv')
+energy_data = pd.read_csv('data/outputs/cleaned_Grafic_SEN.csv')
 energy_data['Date'] = pd.to_datetime(energy_data['Date'])
 energy_data.set_index('Date', inplace=True)
 
@@ -26,12 +25,11 @@ energy_daily = energy_data.resample("D").mean()
 energy_monthly = energy_data.resample("M").mean()
 
 # Save resampled data to CSV files
-energy_hourly.to_csv('energy_hourly.csv')
-energy_daily.to_csv('energy_daily.csv')
-energy_monthly.to_csv('energy_monthly.csv')
+energy_hourly.to_csv('data/outputs/energy_hourly.csv')
+energy_daily.to_csv('data/outputs/energy_daily.csv')
+energy_monthly.to_csv('data/outputs/energy_monthly.csv')
 
-# Step 2: Preliminary Data Analysis
-
+# Preliminary Data Analysis
 print(energy_data.head())
 print("\nSummary Statistics (Hourly):")
 print(energy_hourly.describe())
@@ -41,57 +39,41 @@ energy_hourly_rolling = energy_hourly.rolling(window=7).mean()
 energy_daily_rolling = energy_daily.rolling(window=7).mean()
 
 # Hourly Graphs
+plot_line_with_rolling_mean(
+    energy_hourly_rolling,
+    ['Demand_MW', 'Total_Production_MW', 'Export_Positive_MW'],
+    "Energy Demand, Total Production, and Export by Hour (7-Day Rolling Mean)",
+    "Hour",
+    "MW"
+)
 
-# Graph 1: Demand + Total Production + Export
-plt.figure(figsize=(15,10))
-energy_hourly_rolling[['Demand_MW', 'Total_Production_MW', 'Export_Positive_MW']].plot(kind='line')
-plt.xlabel("Hour")
-plt.ylabel("MW")
-plt.title("Energy Demand, Total Production, and Export by Hour (7-Day Rolling Mean)")
-plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
-plt.grid(True)
-plt.savefig('hourly_demand_production_export.png')
-plt.show()
-
-# Graph 2: All Production Types + Import
-plt.figure(figsize=(15,10))
-energy_hourly_rolling[['Coal_MW', 'Hydrocarbons_MW', 'Water_MW', 'Nuclear_MW', 'Wind_MW', 'Solar_MW', 'Biomass_MW', 'Import_Positive_MW']].plot(kind='line')
-plt.xlabel("Hour")
-plt.ylabel("MW")
-plt.title("Energy Production Types and Import by Hour (7-Day Rolling Mean)")
-plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
-plt.grid(True)
-plt.savefig('hourly_production_import.png')
-plt.show()
+plot_line_with_rolling_mean(
+    energy_hourly_rolling,
+    ['Coal_MW', 'Hydrocarbons_MW', 'Water_MW', 'Nuclear_MW', 'Wind_MW', 'Solar_MW', 'Biomass_MW', 'Import_Positive_MW'],
+    "Energy Production Types and Import by Hour (7-Day Rolling Mean)",
+    "Hour",
+    "MW"
+)
 
 # Daily Graphs
+plot_line_with_rolling_mean(
+    energy_daily_rolling,
+    ['Demand_MW', 'Total_Production_MW', 'Export_Positive_MW'],
+    "Energy Demand, Total Production, and Export by Day (7-Day Rolling Mean)",
+    "Day",
+    "MW"
+)
 
-# Graph 1: Demand + Total Production + Export
-plt.figure(figsize=(15,10))
-energy_daily_rolling[['Demand_MW', 'Total_Production_MW', 'Export_Positive_MW']].plot(kind='line')
-plt.xlabel("Day")
-plt.ylabel("MW")
-plt.title("Energy Demand, Total Production, and Export by Day (7-Day Rolling Mean)")
-plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
-plt.grid(True)
-plt.savefig('daily_demand_production_export.png')
-plt.show()
-
-# Graph 2: All Production Types + Import
-plt.figure(figsize=(15,10))
-energy_daily_rolling[['Coal_MW', 'Hydrocarbons_MW', 'Water_MW', 'Nuclear_MW', 'Wind_MW', 'Solar_MW', 'Biomass_MW', 'Import_Positive_MW']].plot(kind='line')
-plt.xlabel("Day")
-plt.ylabel("MW")
-plt.title("Energy Production Types and Import by Day (7-Day Rolling Mean)")
-plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
-plt.grid(True)
-plt.savefig('daily_production_import.png')
-plt.show()
+plot_line_with_rolling_mean(
+    energy_daily_rolling,
+    ['Coal_MW', 'Hydrocarbons_MW', 'Water_MW', 'Nuclear_MW', 'Wind_MW', 'Solar_MW', 'Biomass_MW', 'Import_Positive_MW'],
+    "Energy Production Types and Import by Day (7-Day Rolling Mean)",
+    "Day",
+    "MW"
+)
 
 # Monthly Graphs
-
-# Graph 1: Demand + Total Production + Export
-fig, ax1 = plt.subplots(figsize=(20,15))
+fig, ax1 = plt.subplots(figsize=(20, 15))
 energy_monthly[['Demand_MW', 'Total_Production_MW', 'Export_Positive_MW']].plot(kind='bar', ax=ax1)
 ax1.set_xlabel("Month")
 ax1.set_ylabel("MW")
@@ -105,7 +87,7 @@ ax1.grid(True)
 plt.show()
 
 # Graph 2: All Production Types + Import
-fig, ax1 = plt.subplots(figsize=(20,15))
+fig, ax1 = plt.subplots(figsize=(20, 15))
 energy_monthly[['Coal_MW', 'Hydrocarbons_MW', 'Water_MW', 'Nuclear_MW', 'Wind_MW', 'Solar_MW', 'Biomass_MW', 'Import_Positive_MW']].plot(kind='bar', stacked=True, ax=ax1)
 ax1.set_xlabel("Month")
 ax1.set_ylabel("MW")
