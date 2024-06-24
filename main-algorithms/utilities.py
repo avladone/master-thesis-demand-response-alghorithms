@@ -1,3 +1,8 @@
+"""
+This script contains various functions that are used throughout the other scripts
+of this project, in order to have a cleaner and a more modular code.
+"""
+
 # Import Libraries
 import pandas as pd
 import numpy as np
@@ -86,30 +91,6 @@ def plot_correlation_heatmap(data, title, figsize=(10, 8), cmap='coolwarm', line
     plt.title(title)
     plt.show()
 
-# Function to fit SARIMA model and plot forecast
-def sarima_forecast(data, column, title, order=(2, 1, 2), seasonal_order=(1, 1, 1, 7), steps=365, figsize=(20, 10)):
-    sarima_model = SARIMAX(data[column], order=order, seasonal_order=seasonal_order)
-    sarima_results = sarima_model.fit(disp=True)
-    sarima_forecast = sarima_results.get_forecast(steps=steps)
-    forecast_index = pd.date_range(start=data.index[-1] + pd.Timedelta(days=1), periods=steps, freq='D')
-    sarima_forecast_df = sarima_forecast.summary_frame()
-    sarima_forecast_df['mean'] = sarima_forecast_df['mean'].clip(lower=0)
-    sarima_forecast_df['mean_ci_lower'] = sarima_forecast_df['mean_ci_lower'].clip(lower=0)
-    plt.figure(figsize=figsize)
-    plt.plot(data.index, data[column], label='Observed', color='blue')
-    plt.plot(forecast_index, sarima_forecast_df['mean'], label='Forecast', color='red')
-    plt.fill_between(forecast_index, sarima_forecast_df['mean_ci_lower'], sarima_forecast_df['mean_ci_upper'], color='pink', alpha=0.3)
-    plt.xlabel('Date')
-    plt.ylabel(column)
-    plt.title(f'SARIMA Forecast of Daily {title} for the Next Year')
-    plt.legend()
-    plt.grid(True)
-    plt.show()
-    print(f"SARIMA Forecast for the next 365 days for {title}:")
-    print(sarima_forecast_df[['mean', 'mean_ci_lower', 'mean_ci_upper']])
-    print(sarima_results.summary())
-    return sarima_forecast_df
-
 # Function to calculate RMSE percentage
 def rmse_percentage(true_values, predicted_values):
     rmse = sqrt(mean_squared_error(true_values, predicted_values))
@@ -159,7 +140,7 @@ def plot_optimized_energy_distribution(optimal_supplies):
 def plot_impact_assessment(emissions_saved_kg, savings):
     plt.figure(figsize=(10, 6))
     plt.bar(
-        ['CO2 Emissions Saved (kg)', 'Economic Savings ($)'],
+        ['CO2 Emissions Saved (kg)', 'Economic Savings (RON)'],
         [emissions_saved_kg, savings],
         color=['red', 'green']
     )
